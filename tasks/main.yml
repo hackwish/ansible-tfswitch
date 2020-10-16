@@ -20,10 +20,6 @@
     dest: /opt/tfswitch/
     remote_src: yes
 
-- name : Install tfswitch
-  shell: "/opt/tfswitch/tfswitch"
-  #register: install_tfswitch
-
 - name: Configure tfswitch on system bin.
   file:
     src: "/opt/tfswitch/tfswitch"
