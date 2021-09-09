@@ -82,14 +82,16 @@
     line: 'export PATH="/opt/tfswitch/:$PATH"'
 
 # Check status
-# - shell: bash -ilc 'which tfswitch'
-#   register: which_tfswitch
-#   failed_when: false
-#   changed_when: false
+- shell: which tfswitch
+  args:
+    executable: /bin/bash -ilc
+  register: which_tfswitch
+  failed_when: false
+  changed_when: false
 
-# - debug:
-#     var:  which_tfswitch.stdout
-#     verbosity: 2
+- debug:
+    var:  which_tfswitch.stdout
+    verbosity: 2
 
 - command: tfswitch -v
   register: result_tfswitch
