@@ -1,8 +1,13 @@
 ---
 # tasks file for ansible-tfswitch
-
+- name: check if tfswitch exists
+  stat: 
+    path: /opt/tfswitch/bin/tfswitch
+  register: tfswitch_exists
+  
 - name: Create tfswitch directory
   file: path=/opt/tfswitch state=directory mode="a+rw"
+  when: tfswitch_exists.stat.exists == False
 
 - name: Get tfswitch
   get_url:
@@ -33,6 +38,58 @@
     dest: "/usr/sbin/tfswitch"
     state: link
   when: tfswitch_stat.stat.exists
+
+# Customize Per existing user
+- name : list users to apply tfswitch
+  shell: |
+    getent passwd | awk -F: '$3 > 999 {print $1}'
+  register: users
+
+- debug:
+    var: users
+    verbosity: 2
+
+- name: Create user bin directory
+  file: path=/home/{{ item }}/.local/bin/ state=directory mode="a+rw"
+  when: tfswitch_stat.stat.exists
+  with_items: "{{ users.stdout_lines }}"
+
+- name: Configure tfswitch on user bin.
+  file:
+    src: "/opt/tfswitch/tfswitch"
+    dest: "/home/{{ item }}/.local/bin/tfswitch"
+    state: link
+  with_items: "{{ users.stdout_lines }}"
+  when: tfswitch_stat.stat.exists
+
+- name: Create user bin directory
+  file: path=/home/{{ item }}/.local/bin/ state=directory mode="a+rw"
+  when: tfswitch_stat.stat.exists
+  with_items: "{{ users.stdout_lines }}"
+
+- name: update tfswitch on users bashrc
+  lineinfile:
+    dest: /home/{{ item }}/.bashrc
+    state: present
+    line: 'export PATH="/opt/tfswitch/:$PATH"'
+  with_items: "{{ users.stdout_lines }}"
+  ignore_errors: true
+
+- name: update tfswitch on skel bashrc
+  lineinfile:
+    dest: /etc/skel/.bashrc
+    state: present
+    line: 'export PATH="/opt/tfswitch/:$PATH"'
+
+# Check status
+- shell: bash -ilc 'which tfswitch'
+  register: which_tfswitch
+  failed_when: false
+  changed_when: false
+
+- debug:
+    var:  which_tfswitch.stdout
+    verbosity: 2
 
 - command: tfswitch -v
   register: result_tfswitch
